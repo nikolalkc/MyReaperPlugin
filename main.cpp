@@ -118,20 +118,20 @@ void hookPostCommandProc(int iCmd, int flag)
 
 	if (iCmd == 40310) //per track 40311 --all tracks , 40309 --off
 	{
-		ShowConsoleMsg("RIPPLE PER TRACK\r\n");
+		//ShowConsoleMsg("RIPPLE PER TRACK\r\n");
 		SetTimelineBlue();
 	}
 	else if (iCmd == 40311) {
-		ShowConsoleMsg("RIPPLE ALL TRACKS\r\n");
+		//ShowConsoleMsg("RIPPLE ALL TRACKS\r\n");
 		SetTimelineYellow();
 	}
 	else if (iCmd == 40309) {
-		ShowConsoleMsg("RIPPLE OFF\r\n");
+		//ShowConsoleMsg("RIPPLE OFF\r\n");
 		SetTimelineGray();
 	}
 	else if (iCmd == 1155) {
 		int state = GetToggleCommandState(1155);
-		ShowConsoleMsg("CYCLE RIPPLE MODE\r\n");
+		//ShowConsoleMsg("CYCLE RIPPLE MODE\r\n");
 
 	}
 
