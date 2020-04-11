@@ -24,6 +24,7 @@
 #include <functional>
 #include <vector>
 #include <memory>
+#include "icontheme.h"
 
 reaper_plugin_info_t* g_plugin_info = nullptr;
 REAPER_PLUGIN_HINSTANCE g_hInst; // handle to the dll instance. could be useful for making win32 API calls
@@ -34,6 +35,37 @@ HWND g_parent; // global variable that holds the handle to the Reaper main windo
 
 void doAction1() {
 	ShowMessageBox("Hello World!", "Reaper extension", 0);
+}
+
+void SetTimelineYellow()
+{
+	ShowMessageBox("YELLOW World!", "Reaper extension", 0);
+	static int iRulerLaneCol[3];
+	static int iTimelineBGColor;
+
+
+	int iSize;
+	ColorTheme* colors = (ColorTheme*)GetColorThemeStruct(&iSize);
+
+	//moj kod
+ //   iTimelineBGColor = colors->timeline_bgcolor;
+ //   colors->timeline_bgcolor = RGB(200,150,0);
+	//colors->itembgcolor = RGB(200, 100, 50);
+	//colors->peaks[0] = RGB(200, 200, 0);
+	//colors->peaks[1] = RGB(200, 150, 0);
+	//colors->peakssel2[0] = RGB(200, 200, 0)*0.7;
+	//colors->peakssel2[1] = RGB(200, 200, 0)*0.7;
+	//colors->arrange_bg = RGB(255, 0, 255);
+
+	colors->trackbgs[0] = RGB(87, 72, 45);
+	colors->trackbgs[1] = RGB(78, 71, 61);
+	for (int i = 0; i < 3; i++)
+	{
+		iRulerLaneCol[i] = colors->ruler_lane_bgcolor[i];
+		colors->ruler_lane_bgcolor[i] = RGB(200, 150, 0);
+	}
+	UpdateTimeline();
+	//Main_OnCommand(40311, 0); //ripple all
 }
 
 void doAction2(action_entry& act) {
@@ -288,7 +320,7 @@ extern "C"
 			SWELL_RegisterCustomControlCreator((SWELL_ControlCreatorProc)rec->GetFunc("Mac_CustomControlCreator"));
 #endif
 			// Use C++11 lambda to call the doAction1() function that doesn't have the action_entry& as input parameter
-			add_action("Simple extension test action", "EXAMPLE_ACTION_01", CannotToggle, [](action_entry&) { doAction1(); });
+			add_action("LKC++ - RIPPLE YELLOW", "EXAMPLE_ACTION_01", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
 
 			// Pass in the doAction2() function directly since it's compatible with the action adding function signature
 			auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
