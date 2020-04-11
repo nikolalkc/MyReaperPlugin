@@ -24,6 +24,9 @@
 #include <functional>
 #include <vector>
 #include <memory>
+
+
+//ja dodao
 #include "icontheme.h"
 
 reaper_plugin_info_t* g_plugin_info = nullptr;
@@ -104,6 +107,34 @@ void SetTimelineGray()
 	}
 	UpdateTimeline();
 	//Main_OnCommand(40309, 0); //ripple off
+}
+
+// just a dummy example, not used ATM (commented in the entry point)
+void hookPostCommandProc(int iCmd, int flag)
+{
+	//WDL_FastString str;
+	//str.SetFormatted(512, "hookPostCommandProc: %s, flag=%d\r\n", kbd_getTextFromCmd(iCmd, NULL), flag);
+	//ShowConsoleMsg(str.Get());
+
+	if (iCmd == 40310) //per track 40311 --all tracks , 40309 --off
+	{
+		ShowConsoleMsg("RIPPLE PER TRACK\r\n");
+		SetTimelineBlue();
+	}
+	else if (iCmd == 40311) {
+		ShowConsoleMsg("RIPPLE ALL TRACKS\r\n");
+		SetTimelineYellow();
+	}
+	else if (iCmd == 40309) {
+		ShowConsoleMsg("RIPPLE OFF\r\n");
+		SetTimelineGray();
+	}
+	else if (iCmd == 1155) {
+		int state = GetToggleCommandState(1155);
+		ShowConsoleMsg("CYCLE RIPPLE MODE\r\n");
+
+	}
+
 }
 
 
@@ -360,11 +391,11 @@ extern "C"
 			SWELL_RegisterCustomControlCreator((SWELL_ControlCreatorProc)rec->GetFunc("Mac_CustomControlCreator"));
 #endif
 			// Use C++11 lambda to call the doAction1() function that doesn't have the action_entry& as input parameter
-			add_action("LKC++ - RIPPLE YELLOW", "LKC_EXAMPLE_ACTION_01", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
+			add_action("LKC++ - RIPPLE YELLOW", "LKC_TIMELINEYELLOW", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
 			
-			add_action("LKC++ - RIPPLE BLUE", "LKC_EXAMPLE_ACTION_02", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
+			add_action("LKC++ - RIPPLE BLUE", "LKC_TIMELINEBLUE", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
 			
-			add_action("LKC++ - RIPPLE GRY", "LKC_EXAMPLE_ACTION_03", CannotToggle, [](action_entry&) { SetTimelineGray(); });
+			add_action("LKC++ - RIPPLE GRAY", "LKC_TIMELINEGRAY", CannotToggle, [](action_entry&) { SetTimelineGray(); });
 
 			// Pass in the doAction2() function directly since it's compatible with the action adding function signature
 			auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
@@ -500,6 +531,9 @@ extern "C"
 			if (!rec->Register("toggleaction", (void*)toggleActionCallback)) { 
 				MessageBox(g_parent, "Could not register toggleaction", "MRP extension error", MB_OK);
 			}
+			if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
+				MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
+
 			if (!RegisterExportedFuncs(rec)) { /*todo: error*/ }
 
 			// restore extension global settings
