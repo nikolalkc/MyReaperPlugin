@@ -39,7 +39,6 @@ void doAction1() {
 
 void SetTimelineYellow()
 {
-	ShowMessageBox("YELLOW World!", "Reaper extension", 0);
 	static int iRulerLaneCol[3];
 	static int iTimelineBGColor;
 
@@ -67,6 +66,47 @@ void SetTimelineYellow()
 	UpdateTimeline();
 	//Main_OnCommand(40311, 0); //ripple all
 }
+
+
+void SetTimelineBlue()
+{
+	static int iRulerLaneCol[3];
+	static int iTimelineBGColor;
+
+	int iSize;
+	ColorTheme* colors = (ColorTheme*)GetColorThemeStruct(&iSize);
+
+	colors->trackbgs[0] = RGB(44, 60, 73);
+	colors->trackbgs[1] = RGB(34, 50, 63);
+	for (int i = 0; i < 3; i++)
+	{
+		iRulerLaneCol[i] = colors->ruler_lane_bgcolor[i];
+		colors->ruler_lane_bgcolor[i] = RGB(85, 200, 255);
+	}
+	UpdateTimeline();
+	//Main_OnCommand(40310, 0); //ripple per track
+}
+
+void SetTimelineGray()
+{
+	static int iRulerLaneCol[3];
+	static int iTimelineBGColor;
+
+	int iSize;
+	ColorTheme* colors = (ColorTheme*)GetColorThemeStruct(&iSize);
+
+	colors->trackbgs[0] = RGB(45, 45, 45);
+	colors->trackbgs[1] = RGB(45, 45, 45);
+	for (int i = 0; i < 3; i++)
+	{
+		iRulerLaneCol[i] = colors->ruler_lane_bgcolor[i];
+		colors->ruler_lane_bgcolor[i] = RGB(45, 45, 45);
+	}
+	UpdateTimeline();
+	//Main_OnCommand(40309, 0); //ripple off
+}
+
+
 
 void doAction2(action_entry& act) {
 	// this action does nothing else but toggles the variable that keeps track of the toggle state
@@ -320,13 +360,17 @@ extern "C"
 			SWELL_RegisterCustomControlCreator((SWELL_ControlCreatorProc)rec->GetFunc("Mac_CustomControlCreator"));
 #endif
 			// Use C++11 lambda to call the doAction1() function that doesn't have the action_entry& as input parameter
-			add_action("LKC++ - RIPPLE YELLOW", "EXAMPLE_ACTION_01", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
+			add_action("LKC++ - RIPPLE YELLOW", "LKC_EXAMPLE_ACTION_01", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
+			
+			add_action("LKC++ - RIPPLE BLUE", "LKC_EXAMPLE_ACTION_02", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
+			
+			add_action("LKC++ - RIPPLE GRY", "LKC_EXAMPLE_ACTION_03", CannotToggle, [](action_entry&) { SetTimelineGray(); });
 
 			// Pass in the doAction2() function directly since it's compatible with the action adding function signature
 			auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
 
 			// Use C++11 lambda to directly define the action code right here
-			add_action("Simple extension another test action", "EXAMPLE_ACTION_03", CannotToggle,
+/*			add_action("Simple extension another test action", "EXAMPLE_ACTION_03", CannotToggle,
 				[](action_entry&) { ShowMessageBox("Hello from C++11 lambda!", "Reaper extension API test", 0); });
 
 			// Add 4 actions in a loop, using C++11 lambda capture [i] to make a small customization for each action
@@ -400,7 +444,7 @@ extern "C"
 			{
 				test_irp_render(true);
 			});
-
+*/
 				// Add functions
 #define func(f) add_function(f, #f)
 			func(MRP_DoublePointer);
