@@ -215,237 +215,6 @@ void SetRippleColors() {
 
 
 
-	//if (GetPlayState() & 4) {
-	//	SetTimelineBlue();
-	//}
-
-
-
-
-void doAction2(action_entry& act) {
-	// this action does nothing else but toggles the variable that keeps track of the toggle state
-	// so it's useless as such but you can see the action state changing in the toolbar buttons and the actions list
-	if (act.m_togglestate == ToggleOff)
-		act.m_togglestate = ToggleOn;
-	else act.m_togglestate = ToggleOff;
-	// store new state of toggle action to ini file immediately
-	char buf[8];
-	// the REAPER api for ini-files only deals with strings, so form a string from the action
-	// toggle state number.
-	int toggletemp = 0;
-	if (act.m_togglestate == ToggleOn)
-		toggletemp = 1;
-	sprintf(buf, "%d", toggletemp);
-	SetExtState("simple_extension", "toggleaction_state", buf, true);
-}
-
-void doAction3(action_entry& act) {
-	readbg() << "action in cycle state " << act.m_cycle_state << "\n";
-	act.m_cycle_state = (act.m_cycle_state + 1) % 3;
-}
-
-void doChangeItemPitchesAction(action_entry& act)
-{
-	int num_sel_items = CountSelectedMediaItems(nullptr);
-	for (int i = 0; i < num_sel_items; ++i)
-	{
-		MediaItem* item = GetSelectedMediaItem(nullptr, i);
-		MediaItem_Take* take = GetActiveTake(item);
-		if (take != nullptr)
-		{
-			double pch = bound_value(-12.0,
-				map_value(act.m_ex_val, 0, 127, -12.0, 12.0),12.0);
-			SetMediaItemTakeInfo_Value(take, "D_PITCH", pch);
-		}
-	}
-	UpdateArrange();
-}
-
-void test_track_range()
-{
-	int sanity = 0;
-	for (auto e : reaper_track_range())
-	{
-		if (e == nullptr)
-		{
-			readbg() << "should not get nullptr!\n";
-			break;
-		}
-		char buf[1024];
-		if (GetSetMediaTrackInfo_String(e, "P_NAME", buf, false))
-			readbg() << e << " " << buf << "\n";
-		++sanity;
-		if (sanity > 10)
-		{
-			readbg() << "sanity failed\n";
-			break;
-		}
-	}
-}
-
-class irp_task : public IParallelTask
-{
-public:
-	// Have to initialize stuff in GUI thread
-	irp_task(MediaItem* item, int id) : m_item(item), m_id(id)
-	{
-		MediaItem_Take* take = GetActiveTake(m_item);
-		if (take != nullptr)
-		{
-			PCM_source* src = GetMediaItemTake_Source(take);
-			if (src != nullptr)
-			{
-				m_src = src->Duplicate();
-				m_shifter = ReaperGetPitchShiftAPI(REAPER_PITCHSHIFT_API_VER);
-				char cfg[] = { 'e','v','a','w', 32, 0 };
-				int nch = src->GetNumChannels();
-				int sr = src->GetSampleRate();
-				char buf[2048];
-				GetProjectPath(buf, 2048);
-				std::string outfn = std::string(buf)+"out_" + std::to_string(id) + ".wav";
-				readbg() << "sink fn : " << outfn << "\n";
-				m_sink = PCM_Sink_Create(outfn.c_str(), cfg, sizeof(cfg), nch, sr, false);
-				if (m_sink == nullptr)
-				{
-					readbg() << "failed to create sink\n";
-					return;
-				}
-				m_shifteroutbuf.resize(nch*m_bufsize);
-				m_sinkbuf.resize(nch*m_bufsize);
-				m_sinkbufpointers.resize(nch);
-				for (int i = 0; i < nch; ++i)
-					m_sinkbufpointers[i] = &m_sinkbuf[i*m_bufsize];
-			}
-		}
-	}
-	// Have to destroy stuff in GUI thread
-	~irp_task()
-	{
-		delete m_sink;
-		delete m_shifter;
-		delete m_src;
-		//readbg() << "irp task dtor " << m_id << "\n";
-	}
-	// Multithreading compatible code put in this method
-	// Stuff like ShowConsoleMsg, Main_OnCommand, Reaper object creation functions etc can't be used here
-	void run() override
-	{
-		if (m_shifter == nullptr || m_src == nullptr || m_sink == nullptr)
-			return;
-		double prate = 0.5;
-		m_shifter->SetQualityParameter(-1);
-		m_shifter->set_nch(m_src->GetNumChannels());
-		m_shifter->set_srate(m_src->GetSampleRate());
-		m_shifter->set_tempo(prate);
-		m_shifter->set_shift(1.0);
-		
-		int64_t srclenframes = m_src->GetLength()*m_src->GetSampleRate();
-		int64_t incounter = 0;
-		while (incounter < srclenframes)
-		{
-			ReaSample* shifter_in_buf = m_shifter->GetBuffer(m_bufsize*prate);
-			PCM_source_transfer_t transfer = { 0 };
-			transfer.length = m_bufsize*prate;
-			transfer.nch = m_src->GetNumChannels();
-			transfer.time_s = (double)incounter / m_src->GetSampleRate();
-			transfer.samplerate = m_src->GetSampleRate();
-			transfer.samples = shifter_in_buf;
-			m_src->GetSamples(&transfer);
-			int shifted_output = 0;
-			int sanity = 0;
-			while (shifted_output < m_bufsize)
-			{
-				
-				m_shifter->BufferDone(m_bufsize*prate);
-				shifted_output += m_shifter->GetSamples(m_bufsize, m_shifteroutbuf.data());
-				
-				++sanity;
-				if (sanity > 100)
-				{
-					//readbg() << "sanity failed";
-					break;
-				}
-			}
-			int nch = m_src->GetNumChannels();
-			for (int i = 0; i < m_bufsize; ++i)
-			{
-				for (int j = 0; j < nch; ++j)
-				{
-					m_sinkbufpointers[j][i] = m_shifteroutbuf[i*nch + j];
-				}
-			}
-			m_sink->WriteDoubles(m_sinkbufpointers.data(), m_bufsize, m_src->GetNumChannels(), 0, 1);
-			incounter += m_bufsize*prate;
-		}
-	}
-	MediaItem* m_item = nullptr;
-	IReaperPitchShift* m_shifter = nullptr;
-	PCM_source* m_src = nullptr;
-	PCM_sink* m_sink = nullptr;
-	int m_bufsize = 16384;
-	std::vector<double> m_shifteroutbuf;
-	std::vector<double> m_sinkbuf;
-	std::vector<double*> m_sinkbufpointers;
-	int m_id = 0;
-};
-
-void test_irp_render(bool multithreaded)
-{
-	int numselitems = CountSelectedMediaItems(nullptr);
-	if (numselitems < 1)
-		return;
-	std::vector<std::shared_ptr<IParallelTask>> tasks;
-	for (int i = 0; i < numselitems; ++i)
-	{
-		MediaItem* item = GetSelectedMediaItem(nullptr, i);
-		auto task = std::make_shared<irp_task>(item,i);
-		tasks.push_back(task);
-	}
-	double t0 = time_precise();
-	execute_parallel_tasks(tasks, multithreaded);
-	double t1 = time_precise();
-	readbg() << "all done in " << t1 - t0 << " seconds\n";
-}
-
-void test_netlib()
-{
-	JNL_HTTPGet netget;
-	std::vector<char> pagedata;
-	std::vector<char> tempdata(65536);
-	netget.connect("http://www.landoleet.org/reaper512rc2-install.exe");
-	while (true)
-	{
-		int r = netget.run();
-		if (r==-1)
-		{
-			readbg() << "net error\n";
-			break;
-		}
-		if (r==1)
-		{
-			readbg() << "connection has closed\n";
-			break;
-		}
-		int avail = netget.bytes_available();
-		if (avail>0)
-		{
-			if (tempdata.size()<avail)
-				tempdata.resize(avail);
-			netget.get_bytes(tempdata.data(), avail);
-			for (int i=0;i<avail;++i)
-				pagedata.push_back(tempdata[i]);
-		}
-		//readbg() << "... ";
-		Sleep(50);
-	}
-	//readbg() << "\n";
-	if (pagedata.size()>0)
-	{
-		readbg() << pagedata.size() << " bytes downloaded\n";
-		//readbg() << pagedata.data();
-	}
-}
-
 extern "C"
 {
 	// this is the only function that needs to be exported by a Reaper extension plugin dll
@@ -474,91 +243,15 @@ extern "C"
 			SWELL_RegisterCustomControlCreator((SWELL_ControlCreatorProc)rec->GetFunc("Mac_CustomControlCreator"));
 #endif
 			// Use C++11 lambda to call the doAction1() function that doesn't have the action_entry& as input parameter
-			add_action("LKC++ - RIPPLE YELLOW", "LKC_TIMELINEYELLOW", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
-			
-			add_action("LKC++ - RIPPLE BLUE", "LKC_TIMELINEBLUE", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
-			
-			add_action("LKC++ - RIPPLE GRAY", "LKC_TIMELINEGRAY", CannotToggle, [](action_entry&) { SetTimelineGray(); });
+			//add_action("LKC++ - RIPPLE YELLOW", "LKC_TIMELINEYELLOW", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
+			//
+			//add_action("LKC++ - RIPPLE BLUE", "LKC_TIMELINEBLUE", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
+			//
+			//add_action("LKC++ - RIPPLE GRAY", "LKC_TIMELINEGRAY", CannotToggle, [](action_entry&) { SetTimelineGray(); });
 
 			// Pass in the doAction2() function directly since it's compatible with the action adding function signature
-			auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
+			//auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
 
-			// Use C++11 lambda to directly define the action code right here
-/*			add_action("Simple extension another test action", "EXAMPLE_ACTION_03", CannotToggle,
-				[](action_entry&) { ShowMessageBox("Hello from C++11 lambda!", "Reaper extension API test", 0); });
-
-			// Add 4 actions in a loop, using C++11 lambda capture [i] to make a small customization for each action
-			for (int i = 0; i < 4; ++i) {
-				auto actionfunction = [i](action_entry&) {
-					std::string message = "You called action " + std::to_string(i + 1);
-					ShowMessageBox(message.c_str(), "Reaper extension API test", 0);
-				};
-				std::string desc = "Simple extension loop created action " + std::to_string(i + 1);
-				std::string id = "EXAMPLE_ACTION_FROM_LOOP" + std::to_string(i);
-				add_action(desc, id, CannotToggle, actionfunction);
-			}
-
-			// Add actions to show WinControl containing windows
-			add_action("MRP : Toggle simple example window", "MRP_SHOW_WINCONTROLSIMPLETEST", ToggleOff, [](action_entry&)
-			{
-				toggle_simple_example_window(g_parent);
-			});
-
-			add_action("MRP : Toggle slider bank window", "MRP_SHOW_WINCONTROLSLIDERBANK", ToggleOff, [](action_entry&)
-			{
-				toggle_sliderbank_window(g_parent);
-			});
-
-			add_action("MRP : Add WinControls test window", "MRP_SHOW_WINCONTROLSTEST", ToggleOff, [](action_entry&)
-			{
-				open_win_controls_window(g_parent);
-			});
-
-			add_action("MRP/Xenakios : Audio Dynamics Processor", "MRP_SHOW_XENDYNAMICSPROC", ToggleOff, [](action_entry&)
-			{
-				show_dynamics_processor_window(g_parent);
-			});
-
-			add_action("MRP/Xenakios : Test MRPAudioAccessor", "MRP_XEN_TESTMRPAUDIOACC", ToggleOff, [](action_entry&)
-			{
-				mrp::experimental::test_mrp_audio_accessor();
-			});
-
-			add_action("MRP/Xenakios : Test netlib", "MRP_XEN_TESTNETLIB", ToggleOff, [](action_entry&)
-			{
-				test_netlib();
-			});
-			
-//#ifdef MODALWINDOWSWORKPROPERLY
-			add_action("MRP : Show modal dialog...", "MRP_SHOW_WINMODAL", ToggleOff, [](action_entry&)
-			{
-				show_modal_dialog(g_parent);
-			});
-//#endif
-			add_action("MRP : Test mousewheel/MIDI CC action", "MRP_TESTWHEELMIDICC", ToggleOff, doChangeItemPitchesAction);
-
-			add_action("MRP : Play/stop audio source", "MRP_TESTPCM_SOURCE", ToggleOff, [](action_entry&)
-			{
-				test_pcm_source(0);
-			});
-
-			add_action("MRP : Test track range class", "MRP_TESTTRACKRANGE", CannotToggle, [](action_entry&)
-			{
-				test_track_range();
-			});
-
-			add_action("MRP : Render selected items with IReaperPitchShift (single threaded)", 
-				"MRP_TESTRENDER_IRP_SINGLETHREADED", CannotToggle, [](action_entry&)
-			{
-				test_irp_render(false);
-			});
-
-			add_action("MRP : Render selected items with IReaperPitchShift (multi threaded)",
-				"MRP_TESTRENDER_IRP_MULTITHREADED", CannotToggle, [](action_entry&)
-			{
-				test_irp_render(true);
-			});
-*/
 				// Add functions
 #define func(f) add_function(f, #f)
 			func(MRP_DoublePointer);
@@ -615,7 +308,7 @@ extern "C"
 				MessageBox(g_parent, "Could not register toggleaction", "MRP extension error", MB_OK);
 			}
 			
-			//MOJ KOD
+			//MOJ KOD****************************************************************************************
 			//if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
 			//	MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
 			
@@ -623,23 +316,11 @@ extern "C"
 			//ripple_state = GetRippleState();
 
 			plugin_register("timer", (void*)SetRippleColors);
-			
 
-			//MOJ KOD END
+			//MOJ KOD END***********************************************************************************
 
 			if (!RegisterExportedFuncs(rec)) { /*todo: error*/ }
 
-			// restore extension global settings
-			// saving extension data into reaper project files is another thing and 
-			// at the moment not done in this example plugin
-			if (togact->m_command_id != 0) {
-				const char* numberString = GetExtState("simple_extension", "toggleaction_state");
-				if (numberString != nullptr) {
-					int initogstate = atoi(numberString);
-					if (initogstate == 1)
-						togact->m_togglestate = ToggleOn;
-				}
-			}		
 			start_or_stop_main_thread_executor(false);
 			return 1; // our plugin registered, return success
 		}
