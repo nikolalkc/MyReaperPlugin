@@ -130,27 +130,15 @@ void hookPostCommandProc(int iCmd, int flag)
 		SetTimelineGray();
 	}
 	else if (iCmd == 1155) {
-		int state = GetToggleCommandState(1155);
-		ShowConsoleMsg("CYCLE RIPPLE MODE");
-		char buf[128] = "";
-		sprintf(buf, "---> %d\r\n", state);
-		ShowConsoleMsg(buf);
+		//ShowConsoleMsg("CYCLE RIPPLE MODE");
+		//ShowConsoleMsg("RIPPLE PER TRACK:");
+		//ShowConsoleMsg("RIPPLE ALL TRACKS:");
+
+		//char buf2[128] = "";
+		//sprintf(buf2, "---> %d\r\n", per_track_state);
+		//ShowConsoleMsg(buf2);
 
 
-		state = GetToggleCommandState(40310);
-		ShowConsoleMsg("RIPPLE PER TRACK:");
-		char buf2[128] = "";
-		sprintf(buf2, "---> %d\r\n", state);
-		ShowConsoleMsg(buf2);
-
-
-		state = GetToggleCommandState(40311);
-		ShowConsoleMsg("RIPPLE ALL TRACKS:");
-		char buf3[128] = "";
-		sprintf(buf3, "---> %d\r\n", state);
-		ShowConsoleMsg(buf3);
-
-		ShowConsoleMsg("\r\n");
 	}
 
 	
@@ -158,17 +146,27 @@ void hookPostCommandProc(int iCmd, int flag)
 }
 
 void ObojTimer() {
-	static int iPlayState;
+	int cycle_state = GetToggleCommandState(1155);
+	int per_track_state = GetToggleCommandState(40310);
+	int all_tracks_state = GetToggleCommandState(40311);
 
-	if (GetPlayState() & 4) {
+
+	if (cycle_state == 1 && per_track_state == 1 && all_tracks_state == 0) {
 		SetTimelineBlue();
 	}
-	else if (GetPlayState() & 1) {
+	else if (cycle_state == 1 && per_track_state == 0 && all_tracks_state == 1) {
 		SetTimelineYellow();
 	}
-	else {
+	else 
+	{
 		SetTimelineGray();
 	}
+
+
+	//if (GetPlayState() & 4) {
+	//	SetTimelineBlue();
+	//}
+
 }
 
 
@@ -565,8 +563,8 @@ extern "C"
 			if (!rec->Register("toggleaction", (void*)toggleActionCallback)) { 
 				MessageBox(g_parent, "Could not register toggleaction", "MRP extension error", MB_OK);
 			}
-			if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
-				MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
+			//if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
+			//	MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
 
 
 			plugin_register("timer", (void*)ObojTimer);
