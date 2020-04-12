@@ -45,6 +45,7 @@ void doAction1() {
 
 //MOJ KOD
 static int iRulerLaneCol[3];
+static int iTrackBackgroundCol[2];
 static int ripple_state = -1; //0 - off, 1 - per track, 2 - all tracks
 //
 
@@ -107,8 +108,8 @@ void SetTimelineGray()
 	int iSize;
 	ColorTheme* colors = (ColorTheme*)GetColorThemeStruct(&iSize);
 
-	colors->trackbgs[0] = RGB(45, 45, 45);
-	colors->trackbgs[1] = RGB(45, 45, 45);
+	colors->trackbgs[0] = iTrackBackgroundCol[0];
+	colors->trackbgs[1] = iTrackBackgroundCol[1];
 	for (int i = 0; i < 3; i++)
 	{
 		colors->ruler_lane_bgcolor[i] = iRulerLaneCol[i];
@@ -160,6 +161,10 @@ void SaveOriginalTimelineColors() {
 	{
 		iRulerLaneCol[i] = original_colors->ruler_lane_bgcolor[i];
 	}
+
+	iTrackBackgroundCol[0] = original_colors->trackbgs[0];
+	iTrackBackgroundCol[1] = original_colors->trackbgs[1];
+
 }
 
 int GetRippleState() {
@@ -203,9 +208,6 @@ void SetRippleColors() {
 			SetTimelineYellow();
 			break;
 		}
-
-
-
 	}
 
 	ripple_state = current_ripple_state;
