@@ -137,6 +137,20 @@ void hookPostCommandProc(int iCmd, int flag)
 
 }
 
+void ObojTimer() {
+	static int iPlayState;
+
+	if (GetPlayState() & 4) {
+		SetTimelineBlue();
+	}
+	else if (GetPlayState() & 1) {
+		SetTimelineYellow();
+	}
+	else {
+		SetTimelineGray();
+	}
+}
+
 
 
 void doAction2(action_entry& act) {
@@ -533,6 +547,11 @@ extern "C"
 			}
 			if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
 				MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
+
+
+			plugin_register("timer", (void*)ObojTimer);
+			/*else                plugin_register("-timer", (void*)ObojTimer);*/
+
 
 			if (!RegisterExportedFuncs(rec)) { /*todo: error*/ }
 
