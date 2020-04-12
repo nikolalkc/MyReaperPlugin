@@ -36,9 +36,18 @@ HWND g_parent; // global variable that holds the handle to the Reaper main windo
 #include "main.hpp" 
 #include "reascript.hpp" /*** HERE THE FUNCTIONS DO THEIR WORK ***/
 
+
+
 void doAction1() {
 	ShowMessageBox("Hello World!", "Reaper extension", 0);
 }
+
+
+//MOJ KOD
+static int iRulerLaneCol[3];
+static int ripple_state = -1; //0 - off, 1 - per track, 2 - all tracks
+//
+
 
 void SetTimelineYellow()
 {
@@ -92,8 +101,8 @@ void SetTimelineBlue()
 
 void SetTimelineGray()
 {
-	static int iRulerLaneCol[3];
-	static int iTimelineBGColor;
+	//static int iRulerLaneCol[3];
+	//static int iTimelineBGColor;
 
 	int iSize;
 	ColorTheme* colors = (ColorTheme*)GetColorThemeStruct(&iSize);
@@ -102,8 +111,7 @@ void SetTimelineGray()
 	colors->trackbgs[1] = RGB(45, 45, 45);
 	for (int i = 0; i < 3; i++)
 	{
-		iRulerLaneCol[i] = colors->ruler_lane_bgcolor[i];
-		colors->ruler_lane_bgcolor[i] = RGB(45, 45, 45);
+		colors->ruler_lane_bgcolor[i] = iRulerLaneCol[i];
 	}
 	UpdateTimeline();
 	//Main_OnCommand(40309, 0); //ripple off
@@ -145,29 +153,70 @@ void hookPostCommandProc(int iCmd, int flag)
 
 }
 
-void ObojTimer() {
+void SaveOriginalTimelineColors() {
+	int iSize;
+	ColorTheme* original_colors = (ColorTheme*)GetColorThemeStruct(&iSize);
+	for (int i = 0; i < 3; i++)
+	{
+		iRulerLaneCol[i] = original_colors->ruler_lane_bgcolor[i];
+	}
+}
+
+int GetRippleState() {
 	int cycle_state = GetToggleCommandState(1155);
 	int per_track_state = GetToggleCommandState(40310);
 	int all_tracks_state = GetToggleCommandState(40311);
 
-
 	if (cycle_state == 1 && per_track_state == 1 && all_tracks_state == 0) {
-		SetTimelineBlue();
+		return 1;
 	}
 	else if (cycle_state == 1 && per_track_state == 0 && all_tracks_state == 1) {
-		SetTimelineYellow();
+		return 2;
 	}
-	else 
+	else
 	{
-		SetTimelineGray();
+		return 0;
 	}
+}
+
+void SetRippleColors() {
+
+	int current_ripple_state = GetRippleState();
+
+	if (current_ripple_state != ripple_state)
+	{
+		if (ripple_state == 0)
+			SaveOriginalTimelineColors();
+
+		switch (current_ripple_state)
+		{
+		default:
+			break;
+		case 0:
+			SetTimelineGray();
+			break;
+		case 1:
+			SetTimelineBlue();
+			break;
+		case 2:
+
+			SetTimelineYellow();
+			break;
+		}
+
+
+
+	}
+
+	ripple_state = current_ripple_state;
+}
+
 
 
 	//if (GetPlayState() & 4) {
 	//	SetTimelineBlue();
 	//}
 
-}
 
 
 
@@ -563,13 +612,18 @@ extern "C"
 			if (!rec->Register("toggleaction", (void*)toggleActionCallback)) { 
 				MessageBox(g_parent, "Could not register toggleaction", "MRP extension error", MB_OK);
 			}
+			
+			//MOJ KOD
 			//if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
 			//	MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
+			
+			SaveOriginalTimelineColors(); //init setup
+			//ripple_state = GetRippleState();
 
+			plugin_register("timer", (void*)SetRippleColors);
+			
 
-			plugin_register("timer", (void*)ObojTimer);
-			/*else                plugin_register("-timer", (void*)ObojTimer);*/
-
+			//MOJ KOD END
 
 			if (!RegisterExportedFuncs(rec)) { /*todo: error*/ }
 
