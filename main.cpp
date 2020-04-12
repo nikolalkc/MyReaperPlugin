@@ -131,9 +131,29 @@ void hookPostCommandProc(int iCmd, int flag)
 	}
 	else if (iCmd == 1155) {
 		int state = GetToggleCommandState(1155);
-		//ShowConsoleMsg("CYCLE RIPPLE MODE\r\n");
+		ShowConsoleMsg("CYCLE RIPPLE MODE");
+		char buf[128] = "";
+		sprintf(buf, "---> %d\r\n", state);
+		ShowConsoleMsg(buf);
 
+
+		state = GetToggleCommandState(40310);
+		ShowConsoleMsg("RIPPLE PER TRACK:");
+		char buf2[128] = "";
+		sprintf(buf2, "---> %d\r\n", state);
+		ShowConsoleMsg(buf2);
+
+
+		state = GetToggleCommandState(40311);
+		ShowConsoleMsg("RIPPLE ALL TRACKS:");
+		char buf3[128] = "";
+		sprintf(buf3, "---> %d\r\n", state);
+		ShowConsoleMsg(buf3);
+
+		ShowConsoleMsg("\r\n");
 	}
+
+	
 
 }
 
