@@ -127,19 +127,19 @@ void hookPostCommandProc(int iCmd, int flag)
 
 	if (iCmd == 40310) //per track 40311 --all tracks , 40309 --off
 	{
-		//ShowConsoleMsg("RIPPLE PER TRACK\r\n");
-		SetTimelineBlue();
+		ShowConsoleMsg("RIPPLE PER TRACK\r\n");
+		//SetTimelineBlue();
 	}
 	else if (iCmd == 40311) {
-		//ShowConsoleMsg("RIPPLE ALL TRACKS\r\n");
-		SetTimelineYellow();
+		ShowConsoleMsg("RIPPLE ALL TRACKS\r\n");
+		//SetTimelineYellow();
 	}
 	else if (iCmd == 40309) {
-		//ShowConsoleMsg("RIPPLE OFF\r\n");
-		SetTimelineGray();
+		ShowConsoleMsg("RIPPLE OFF\r\n");
+		//SetTimelineGray();
 	}
 	else if (iCmd == 1155) {
-		//ShowConsoleMsg("CYCLE RIPPLE MODE");
+		ShowConsoleMsg("CYCLE RIPPLE MODE\r\n");
 		//ShowConsoleMsg("RIPPLE PER TRACK:");
 		//ShowConsoleMsg("RIPPLE ALL TRACKS:");
 
@@ -198,13 +198,15 @@ void SetRippleColors() {
 		default:
 			break;
 		case 0:
+			ShowConsoleMsg("SET GRAY\r\n");
 			SetTimelineGray();
 			break;
 		case 1:
 			SetTimelineBlue();
+			ShowConsoleMsg("SET BLUE\r\n");
 			break;
 		case 2:
-
+			ShowConsoleMsg("SET YELLOW\r\n");
 			SetTimelineYellow();
 			break;
 		}
@@ -243,11 +245,11 @@ extern "C"
 			SWELL_RegisterCustomControlCreator((SWELL_ControlCreatorProc)rec->GetFunc("Mac_CustomControlCreator"));
 #endif
 			// Use C++11 lambda to call the doAction1() function that doesn't have the action_entry& as input parameter
-			//add_action("LKC++ - RIPPLE YELLOW", "LKC_TIMELINEYELLOW", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
+			add_action("LKC++ - RIPPLE YELLOW", "LKC_TIMELINEYELLOW", CannotToggle, [](action_entry&) { SetTimelineYellow(); });
 			//
-			//add_action("LKC++ - RIPPLE BLUE", "LKC_TIMELINEBLUE", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
+			add_action("LKC++ - RIPPLE BLUE", "LKC_TIMELINEBLUE", CannotToggle, [](action_entry&) { SetTimelineBlue(); });
 			//
-			//add_action("LKC++ - RIPPLE GRAY", "LKC_TIMELINEGRAY", CannotToggle, [](action_entry&) { SetTimelineGray(); });
+			add_action("LKC++ - RIPPLE GRAY", "LKC_TIMELINEGRAY", CannotToggle, [](action_entry&) { SetTimelineGray(); });
 
 			// Pass in the doAction2() function directly since it's compatible with the action adding function signature
 			//auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
@@ -309,13 +311,14 @@ extern "C"
 			}
 			
 			//MOJ KOD****************************************************************************************
-			//if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
-			//	MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
+			if (!rec->Register("hookpostcommand", (void*)hookPostCommandProc)) //ja dodao
+				MessageBox(g_parent, "Could not register hookpostcommand", "MRP extension error", MB_OK);
 			
 			SaveOriginalTimelineColors(); //init setup
 			//ripple_state = GetRippleState();
 
 			plugin_register("timer", (void*)SetRippleColors);
+			ShowConsoleMsg("LKC++ Plugin registered\r\n");
 
 			//MOJ KOD END***********************************************************************************
 
