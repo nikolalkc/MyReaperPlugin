@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>69AE8EE1-8B8D-44BB-B535-EFFB0BB71F2F</string>
+	<key>IDESourceControlProjectName</key>
+	<string>ColoredRippling</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>0B96751826FA4790F6285393C34600A5883E633F</key>
+		<string>https://github.com/nikolalkc/MyReaperPlugin</string>
+		<key>11B94510860470908E89574702597330C32284A3</key>
+		<string>https://github.com/justinfrankel/WDL.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>Xcode/ColoredRippling.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>0B96751826FA4790F6285393C34600A5883E633F</key>
+		<string>../../..</string>
+		<key>11B94510860470908E89574702597330C32284A3</key>
+		<string>../../../../WDL</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/nikolalkc/MyReaperPlugin</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>0B96751826FA4790F6285393C34600A5883E633F</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>0B96751826FA4790F6285393C34600A5883E633F</string>
+			<key>IDESourceControlWCCName</key>
+			<string>MyReaperPlugin</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>11B94510860470908E89574702597330C32284A3</string>
+			<key>IDESourceControlWCCName</key>
+			<string>WDL</string>
+		</dict>
+	</array>
+</dict>
+</plist>
