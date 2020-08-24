@@ -42,6 +42,23 @@ void doAction1() {
 	ShowMessageBox("Hello World!", "Reaper extension", 0);
 }
 
+void doAction2(action_entry& act) {
+	// this action does nothing else but toggles the variable that keeps track of the toggle state
+	// so it's useless as such but you can see the action state changing in the toolbar buttons and the actions list
+	if (act.m_togglestate == ToggleOff)
+		act.m_togglestate = ToggleOn;
+	else act.m_togglestate = ToggleOff;
+	// store new state of toggle action to ini file immediately
+	char buf[8];
+	// the REAPER api for ini-files only deals with strings, so form a string from the action
+	// toggle state number.
+	int toggletemp = 0;
+	if (act.m_togglestate == ToggleOn)
+		toggletemp = 1;
+	sprintf(buf, "%d", toggletemp);
+	SetExtState("LKC_COLORED_RIPPLING", "colored_rippling_state", buf, true);
+}
+
 
 //MOJ KOD
 static int iRulerLaneCol[3];
@@ -185,32 +202,45 @@ int GetRippleState() {
 }
 
 void SetRippleColors() {
-
-	int current_ripple_state = GetRippleState();
-
-	if (current_ripple_state != ripple_state)
-	{
-		if (ripple_state == 0)
-			SaveOriginalTimelineColors();
-
-		switch (current_ripple_state)
+	const char* numberString = GetExtState("LKC_COLORED_RIPPLING", "colored_rippling_state");
+	if (numberString != nullptr) {
+		int initogstate = atoi(numberString);
+		if (initogstate == 1)
 		{
-		default:
-			break;
-		case 0:
-			SetTimelineGray();
-			break;
-		case 1:
-			SetTimelineBlue();
-			break;
-		case 2:
+			int current_ripple_state = GetRippleState();
 
-			SetTimelineYellow();
-			break;
+			if (current_ripple_state != ripple_state)
+			{
+				if (ripple_state == 0)
+					SaveOriginalTimelineColors();
+
+				switch (current_ripple_state)
+				{
+				default:
+					break;
+				case 0:
+					SetTimelineGray();
+					break;
+				case 1:
+					SetTimelineBlue();
+					break;
+				case 2:
+
+					SetTimelineYellow();
+					break;
+				}
+			}
+
+			ripple_state = current_ripple_state;
 		}
-	}
+		else
+		{
+			ripple_state = -1;
+			SetTimelineGray();
+		}
 
-	ripple_state = current_ripple_state;
+	}
+	
 }
 
 
@@ -250,7 +280,7 @@ extern "C"
 			//add_action("LKC++ - RIPPLE GRAY", "LKC_TIMELINEGRAY", CannotToggle, [](action_entry&) { SetTimelineGray(); });
 
 			// Pass in the doAction2() function directly since it's compatible with the action adding function signature
-			//auto togact = add_action("Simple extension togglable test action", "EXAMPLE_ACTION_02", ToggleOff, doAction2);
+			auto togact = add_action("LKC - Toggle colored rippling", "LKC_TOGGLE_COLORED_RIPPLING", ToggleOff, doAction2);
 
 				// Add functions
 #define func(f) add_function(f, #f)
@@ -320,6 +350,20 @@ extern "C"
 			//MOJ KOD END***********************************************************************************
 
 			if (!RegisterExportedFuncs(rec)) { /*todo: error*/ }
+
+
+
+			// restore extension global settings
+			// saving extension data into reaper project files is another thing and 
+			// at the moment not done in this example plugin
+			if (togact->m_command_id != 0) {
+				const char* numberString = GetExtState("LKC_COLORED_RIPPLING", "colored_rippling_state");
+				if (numberString != nullptr) {
+					int initogstate = atoi(numberString);
+					if (initogstate == 1)
+						togact->m_togglestate = ToggleOn;
+				}
+			}		
 
 			start_or_stop_main_thread_executor(false);
 			return 1; // our plugin registered, return success
