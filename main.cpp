@@ -46,17 +46,27 @@ void doAction2(action_entry& act) {
 	// this action does nothing else but toggles the variable that keeps track of the toggle state
 	// so it's useless as such but you can see the action state changing in the toolbar buttons and the actions list
 	if (act.m_togglestate == ToggleOff)
+	{
 		act.m_togglestate = ToggleOn;
-	else act.m_togglestate = ToggleOff;
+		ShowMessageBox("Extension enabled. You must restart REAPER in order to see changes.", "LKC COLORED RIPPLING!", 0);
+	}
+	else {
+		act.m_togglestate = ToggleOff;
+		ShowMessageBox("Extension disabled. You must restart REAPER in order to see changes.", "LKC COLORED RIPPLING!", 0);
+	}
 	// store new state of toggle action to ini file immediately
 	char buf[8];
 	// the REAPER api for ini-files only deals with strings, so form a string from the action
 	// toggle state number.
 	int toggletemp = 0;
-	if (act.m_togglestate == ToggleOn)
+	if (act.m_togglestate == ToggleOn) {
 		toggletemp = 1;
+	}
+		
 	sprintf(buf, "%d", toggletemp);
 	SetExtState("LKC_COLORED_RIPPLING", "colored_rippling_state", buf, true);
+	
+	
 }
 
 
@@ -202,44 +212,31 @@ int GetRippleState() {
 }
 
 void SetRippleColors() {
-	const char* numberString = GetExtState("LKC_COLORED_RIPPLING", "colored_rippling_state");
-	if (numberString != nullptr) {
-		int initogstate = atoi(numberString);
-		if (initogstate == 1)
+	int current_ripple_state = GetRippleState();
+
+	if (current_ripple_state != ripple_state)
+	{
+		if (ripple_state == 0)
+			SaveOriginalTimelineColors();
+
+		switch (current_ripple_state)
 		{
-			int current_ripple_state = GetRippleState();
-
-			if (current_ripple_state != ripple_state)
-			{
-				if (ripple_state == 0)
-					SaveOriginalTimelineColors();
-
-				switch (current_ripple_state)
-				{
-				default:
-					break;
-				case 0:
-					SetTimelineGray();
-					break;
-				case 1:
-					SetTimelineBlue();
-					break;
-				case 2:
-
-					SetTimelineYellow();
-					break;
-				}
-			}
-
-			ripple_state = current_ripple_state;
-		}
-		else
-		{
-			ripple_state = -1;
+		default:
+			break;
+		case 0:
 			SetTimelineGray();
-		}
+			break;
+		case 1:
+			SetTimelineBlue();
+			break;
+		case 2:
 
+			SetTimelineYellow();
+			break;
+		}
 	}
+
+	ripple_state = current_ripple_state;
 	
 }
 
@@ -345,7 +342,7 @@ extern "C"
 			SaveOriginalTimelineColors(); //init setup
 			//ripple_state = GetRippleState();
 
-			plugin_register("timer", (void*)SetRippleColors);
+
 
 			//MOJ KOD END***********************************************************************************
 
@@ -360,8 +357,10 @@ extern "C"
 				const char* numberString = GetExtState("LKC_COLORED_RIPPLING", "colored_rippling_state");
 				if (numberString != nullptr) {
 					int initogstate = atoi(numberString);
-					if (initogstate == 1)
+					if (initogstate == 1) {
 						togact->m_togglestate = ToggleOn;
+						plugin_register("timer", (void*)SetRippleColors);
+					}
 				}
 			}		
 
